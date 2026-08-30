@@ -25,7 +25,7 @@ jobs:
           distribution: temurin
 
       - name: Install deps
-        run: npm ci --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       - name: Setup Android SDK
         run: |
