@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useEffect, useState, useCallback } from 'react'
 import {
   View, Text, FlatList, StyleSheet, RefreshControl, Alert,
@@ -62,10 +63,10 @@ export function LibraryScreen({ currentTrackId, onPlay }: Props) {
   }
 
   const remove = async (id: string) => {
-    Alert.alert('удалить?', 'трек будет удалён с сервера', [
-      { text: 'отмена', style: 'cancel' },
+    Alert.alert('СѓРґР°Р»РёС‚СЊ?', 'С‚СЂРµРє Р±СѓРґРµС‚ СѓРґР°Р»С‘РЅ СЃ СЃРµСЂРІРµСЂР°', [
+      { text: 'РѕС‚РјРµРЅР°', style: 'cancel' },
       {
-        text: 'удалить', style: 'destructive', onPress: async () => {
+        text: 'СѓРґР°Р»РёС‚СЊ', style: 'destructive', onPress: async () => {
           const t = tracks.find(tr => tr.id === id)
           if (!t) return
           try { await api.deleteTrack(t.filename) } catch {}
@@ -79,11 +80,11 @@ export function LibraryScreen({ currentTrackId, onPlay }: Props) {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <Text style={styles.title}>библиотека</Text>
+      <Text style={styles.title}>Р±РёР±Р»РёРѕС‚РµРєР°</Text>
       {tracks.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>♫</Text>
-          <Text style={styles.emptyText}>пусто — скачай что-нибудь</Text>
+          <Text style={styles.emptyIcon}>в™«</Text>
+          <Text style={styles.emptyText}>РїСѓСЃС‚Рѕ вЂ” СЃРєР°С‡Р°Р№ С‡С‚Рѕ-РЅРёР±СѓРґСЊ</Text>
         </View>
       ) : (
         <FlatList

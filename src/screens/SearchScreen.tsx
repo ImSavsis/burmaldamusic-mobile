@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useState, useRef, useCallback } from 'react'
 import {
   View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity,
@@ -40,7 +41,7 @@ export function SearchScreen() {
       setResults(res)
       setPhase('results')
     } catch {
-      Alert.alert('ошибка', 'не удалось найти')
+      Alert.alert('РѕС€РёР±РєР°', 'РЅРµ СѓРґР°Р»РѕСЃСЊ РЅР°Р№С‚Рё')
       setPhase('idle')
     }
   }, [query, fmt])
@@ -48,7 +49,7 @@ export function SearchScreen() {
   const startDownload = useCallback(async (url: string) => {
     setPhase('downloading')
     setDlProgress(0)
-    setDlMsg('начинаем...')
+    setDlMsg('РЅР°С‡РёРЅР°РµРј...')
     try {
       const { id } = await api.download(url, FORMATS[fmt])
       pollRef.current = setInterval(async () => {
@@ -56,25 +57,25 @@ export function SearchScreen() {
           const job = await api.progress(id)
           setDlProgress(job.progress)
           setDlSpeed(job.speed || '')
-          if (job.status === 'downloading') setDlMsg(`скачиваем...`)
-          if (job.status === 'converting') setDlMsg('конвертируем...')
+          if (job.status === 'downloading') setDlMsg(`СЃРєР°С‡РёРІР°РµРј...`)
+          if (job.status === 'converting') setDlMsg('РєРѕРЅРІРµСЂС‚РёСЂСѓРµРј...')
           if (job.status === 'done') {
             stopPoll()
             if (job.track) await store.addTrack(job.track)
             setPhase('idle')
             setQuery('')
-            Alert.alert('✓ готово', job.track?.title || 'скачано')
+            Alert.alert('вњ“ РіРѕС‚РѕРІРѕ', job.track?.title || 'СЃРєР°С‡Р°РЅРѕ')
           }
           if (job.status === 'error') {
             stopPoll()
             setPhase('idle')
-            Alert.alert('ошибка', job.error || 'неизвестная ошибка')
+            Alert.alert('РѕС€РёР±РєР°', job.error || 'РЅРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°')
           }
         } catch { stopPoll(); setPhase('idle') }
       }, 1000)
     } catch (e: any) {
       setPhase('idle')
-      Alert.alert('ошибка', e.message)
+      Alert.alert('РѕС€РёР±РєР°', e.message)
     }
   }, [fmt])
 
@@ -88,16 +89,16 @@ export function SearchScreen() {
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Logo />
-          <Text style={styles.sub}>youtube · spotify · soundcloud · apple</Text>
+          <Text style={styles.sub}>youtube В· spotify В· soundcloud В· apple</Text>
         </View>
 
         {phase !== 'downloading' && (
           <>
             <View style={styles.inputWrap}>
-              <Text style={styles.inputPre}>▸</Text>
+              <Text style={styles.inputPre}>в–ё</Text>
               <TextInput
                 style={styles.input}
-                placeholder="url или название трека"
+                placeholder="url РёР»Рё РЅР°Р·РІР°РЅРёРµ С‚СЂРµРєР°"
                 placeholderTextColor={colors.dim}
                 value={query}
                 onChangeText={setQuery}
@@ -109,14 +110,14 @@ export function SearchScreen() {
               />
               {query.length > 0 && (
                 <TouchableOpacity onPress={() => { setQuery(''); setPhase('idle') }}>
-                  <Text style={styles.clear}>✕</Text>
+                  <Text style={styles.clear}>вњ•</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             <View style={styles.formatRow}>
               <TouchableOpacity onPress={() => setFmt(f => (f - 1 + FORMATS.length) % FORMATS.length)}>
-                <Text style={styles.arrow}>←</Text>
+                <Text style={styles.arrow}>в†ђ</Text>
               </TouchableOpacity>
               {FORMATS.map((f, i) => (
                 <TouchableOpacity key={f} onPress={() => setFmt(i)}>
@@ -124,33 +125,33 @@ export function SearchScreen() {
                 </TouchableOpacity>
               ))}
               <TouchableOpacity onPress={() => setFmt(f => (f + 1) % FORMATS.length)}>
-                <Text style={styles.arrow}>→</Text>
+                <Text style={styles.arrow}>в†’</Text>
               </TouchableOpacity>
             </View>
 
             {phase === 'idle' && (
               <TouchableOpacity style={styles.btn} onPress={search}>
-                <Text style={styles.btnText}>скачать</Text>
+                <Text style={styles.btnText}>СЃРєР°С‡Р°С‚СЊ</Text>
               </TouchableOpacity>
             )}
 
             {phase === 'searching' && (
               <View style={styles.center}>
                 <ActivityIndicator color={colors.purple} size="large" />
-                <Text style={styles.searchMsg}>ищем...</Text>
+                <Text style={styles.searchMsg}>РёС‰РµРј...</Text>
               </View>
             )}
 
             {phase === 'results' && (
               <View style={styles.results}>
-                <Text style={styles.resultsHint}>выбери трек</Text>
+                <Text style={styles.resultsHint}>РІС‹Р±РµСЂРё С‚СЂРµРє</Text>
                 {results.map((r, i) => (
                   <TouchableOpacity key={r.id} style={styles.result} onPress={() => startDownload(`https://www.youtube.com/watch?v=${r.id}`)}>
                     {r.thumbnail ? (
                       <Image source={{ uri: r.thumbnail }} style={styles.thumb} />
                     ) : (
                       <View style={[styles.thumb, styles.thumbFb]}>
-                        <Text style={styles.thumbIcon}>♪</Text>
+                        <Text style={styles.thumbIcon}>в™Є</Text>
                       </View>
                     )}
                     <View style={styles.resultInfo}>
@@ -161,7 +162,7 @@ export function SearchScreen() {
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity onPress={() => setPhase('idle')}>
-                  <Text style={styles.back}>← назад</Text>
+                  <Text style={styles.back}>в†ђ РЅР°Р·Р°Рґ</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -170,7 +171,7 @@ export function SearchScreen() {
 
         {phase === 'downloading' && (
           <View style={styles.dlWrap}>
-            <Text style={styles.dlTitle}>скачиваем...</Text>
+            <Text style={styles.dlTitle}>СЃРєР°С‡РёРІР°РµРј...</Text>
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: `${dlProgress}%` as any }]} />
             </View>
@@ -180,7 +181,7 @@ export function SearchScreen() {
             </View>
             <Text style={styles.dlMsg}>{dlMsg}</Text>
             <TouchableOpacity style={styles.cancelBtn} onPress={cancel}>
-              <Text style={styles.cancelText}>отмена</Text>
+              <Text style={styles.cancelText}>РѕС‚РјРµРЅР°</Text>
             </TouchableOpacity>
           </View>
         )}

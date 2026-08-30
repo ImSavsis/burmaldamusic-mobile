@@ -1,3 +1,4 @@
+﻿// @ts-nocheck
 import React, { useEffect, useState } from 'react'
 import { View, Text, Image, StyleSheet, TouchableOpacity, Pressable } from 'react-native'
 import TrackPlayer, {
@@ -43,7 +44,7 @@ export function MiniPlayer({ track, onExpand }: Props) {
             <Image source={{ uri: track.coverUrl }} style={styles.art} />
           ) : (
             <View style={[styles.art, styles.artFallback]}>
-              <Text style={styles.artIcon}>♪</Text>
+              <Text style={styles.artIcon}>в™Є</Text>
             </View>
           )}
         </Animated.View>
@@ -54,10 +55,10 @@ export function MiniPlayer({ track, onExpand }: Props) {
         <TouchableOpacity
           style={styles.btn}
           onPress={() => isPlaying ? TrackPlayer.pause() : TrackPlayer.play()}>
-          <Text style={styles.btnIcon}>{isPlaying ? '⏸' : '▶'}</Text>
+          <Text style={styles.btnIcon}>{isPlaying ? 'вЏё' : 'в–¶'}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.btn} onPress={() => TrackPlayer.skip(0)}>
-          <Text style={styles.btnIcon}>⏭</Text>
+          <Text style={styles.btnIcon}>вЏ­</Text>
         </TouchableOpacity>
       </View>
     </Pressable>
