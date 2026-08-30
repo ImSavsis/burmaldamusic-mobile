@@ -3,6 +3,7 @@ import {
   View, Text, Image, StyleSheet, TouchableOpacity, Dimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+// @ts-ignore
 import Slider from '@react-native-community/slider'
 import TrackPlayer, { usePlaybackState, useProgress, State } from 'react-native-track-player'
 import Animated, {
@@ -85,7 +86,7 @@ export function PlayerScreen({ track, onClose }: Props) {
             minimumValue={0}
             maximumValue={duration || 1}
             value={position}
-            onSlidingComplete={v => TrackPlayer.seekTo(v)}
+            onSlidingComplete={(v: number) => TrackPlayer.seekTo(v)}
             minimumTrackTintColor={colors.purple}
             maximumTrackTintColor={colors.cardBorder}
             thumbTintColor={colors.purple}
@@ -123,7 +124,7 @@ export function PlayerScreen({ track, onClose }: Props) {
 
 const styles = StyleSheet.create({
   root: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.bg,
     zIndex: 100,
   },
