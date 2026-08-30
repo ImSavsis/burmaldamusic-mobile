@@ -28,11 +28,12 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Decode keystore
-        run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > android/app/release.keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > android/app/release.keystore
 
       - name: Build release APK
         env:
