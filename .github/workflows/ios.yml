@@ -50,10 +50,11 @@ jobs:
           name: burmaldamusic-ios
           path: /tmp/BurmaldaMusic.ipa
 
-      - name: Create GitHub Release
+      - name: Create/update GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: /tmp/BurmaldaMusic.ipa
           name: BurmaldaMusic ${{ github.ref_name }}
           generate_release_notes: true
+          prerelease: false
