@@ -19,20 +19,3 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
-
-subprojects {
-    afterEvaluate {
-        try {
-            android {
-                defaultConfig {
-                    externalNativeBuild {
-                        cmake {
-                            arguments "-DCMAKE_CXX_STANDARD=20",
-                                      "-DCMAKE_CXX_STANDARD_REQUIRED=ON"
-                        }
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-    }
-}
