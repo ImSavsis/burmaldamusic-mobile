@@ -1,0 +1,59 @@
+name: iOS IPA
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - name: Build unsigned IPA
+        run: |
+          cd ios
+          xcodebuild \
+            -workspace BurmaldaMusic.xcworkspace \
+            -scheme BurmaldaMusic \
+            -configuration Release \
+            -destination generic/platform=iOS \
+            -archivePath /tmp/BurmaldaMusic.xcarchive \
+            archive \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_ALLOWED=NO \
+            PRODUCT_BUNDLE_IDENTIFIER=xyz.savsis.burmaldamusic
+
+          mkdir -p /tmp/Payload
+          cp -r /tmp/BurmaldaMusic.xcarchive/Products/Applications/BurmaldaMusic.app /tmp/Payload/
+          cd /tmp && zip -r BurmaldaMusic.ipa Payload/
+          rm -rf /tmp/Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: burmaldamusic-ios
+          path: /tmp/BurmaldaMusic.ipa
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: /tmp/BurmaldaMusic.ipa
+          name: BurmaldaMusic ${{ github.ref_name }}
+          generate_release_notes: true
