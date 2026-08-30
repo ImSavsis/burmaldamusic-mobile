@@ -1,16 +1,10 @@
 // @ts-nocheck
-import React, { useCallback, useRef } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import {
   View, Text, Image, StyleSheet, TouchableOpacity, Dimensions,
   Animated, PanResponder,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import SliderNative from '@react-native-community/slider'
-const Slider = SliderNative as unknown as React.ComponentType<{
-  style?: object; minimumValue?: number; maximumValue?: number; value?: number
-  onSlidingComplete?: (v: number) => void; minimumTrackTintColor?: string
-  maximumTrackTintColor?: string; thumbTintColor?: string
-}>
 import TrackPlayer, { usePlaybackState, useProgress, State } from 'react-native-track-player'
 import Share from 'react-native-share'
 import { Track, api } from '../api/client'
@@ -32,6 +26,10 @@ export function PlayerScreen({ track, onClose }: Props) {
   const { position, duration } = useProgress(250)
   const isPlaying = state === State.Playing
   const translateY = useRef(new Animated.Value(0)).current
+  const trackWidth = useRef(0)
+  const [seekPos, setSeekPos] = useState<number | null>(null)
+  const displayPos = seekPos !== null ? seekPos : position
+  const progress = duration > 0 ? displayPos / duration : 0
 
   const panResponder = useRef(
     PanResponder.create({
@@ -88,18 +86,31 @@ export function PlayerScreen({ track, onClose }: Props) {
       </View>
 
       <View style={styles.sliderWrap}>
-        <Slider
-          style={styles.slider}
-          minimumValue={0}
-          maximumValue={duration || 1}
-          value={position}
-          onSlidingComplete={(v: number) => TrackPlayer.seekTo(v)}
-          minimumTrackTintColor={colors.purple}
-          maximumTrackTintColor={colors.cardBorder}
-          thumbTintColor={colors.purple}
-        />
+        <View
+          style={styles.seekTrack}
+          onLayout={e => { trackWidth.current = e.nativeEvent.layout.width }}
+          onStartShouldSetResponder={() => true}
+          onResponderGrant={e => {
+            const x = e.nativeEvent.locationX
+            setSeekPos(Math.max(0, Math.min(1, x / (trackWidth.current || 1))) * (duration || 1))
+          }}
+          onResponderMove={e => {
+            const x = e.nativeEvent.locationX
+            setSeekPos(Math.max(0, Math.min(1, x / (trackWidth.current || 1))) * (duration || 1))
+          }}
+          onResponderRelease={e => {
+            const x = e.nativeEvent.locationX
+            const p = Math.max(0, Math.min(1, x / (trackWidth.current || 1))) * (duration || 1)
+            TrackPlayer.seekTo(p)
+            setSeekPos(null)
+          }}
+        >
+          <View style={styles.seekBg} />
+          <View style={[styles.seekFill, { width: `${progress * 100}%` as any }]} />
+          <View style={[styles.seekThumb, { left: `${Math.min(95, progress * 100)}%` as any }]} />
+        </View>
         <View style={styles.timeRow}>
-          <Text style={styles.time}>{fmt(position)}</Text>
+          <Text style={styles.time}>{fmt(displayPos)}</Text>
           <Text style={styles.time}>{fmt(duration)}</Text>
         </View>
       </View>
@@ -167,8 +178,20 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: spacing.xs },
   artist: { fontSize: 14, color: colors.subtext },
   sliderWrap: { paddingHorizontal: spacing.lg, marginBottom: spacing.lg },
-  slider: { width: '100%', height: 40 },
-  timeRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  seekTrack: { height: 28, justifyContent: 'center', position: 'relative' },
+  seekBg: {
+    position: 'absolute', left: 0, right: 0, height: 3,
+    backgroundColor: colors.cardBorder, borderRadius: 2,
+  },
+  seekFill: {
+    position: 'absolute', left: 0, height: 3,
+    backgroundColor: colors.purple, borderRadius: 2,
+  },
+  seekThumb: {
+    position: 'absolute', width: 14, height: 14, borderRadius: 7,
+    backgroundColor: colors.purple, top: 7, marginLeft: -7,
+  },
+  timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
   time: { fontSize: 11, color: colors.subtext, fontFamily: 'Courier New' },
   controls: {
     flexDirection: 'row',
