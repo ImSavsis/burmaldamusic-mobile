@@ -38,7 +38,8 @@ export function TrackCard({ track, isPlaying, onPress, onDelete }: Props) {
       }
     })
 
-  const cardStyle = useAnimatedStyle(() => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cardStyle: any = useAnimatedStyle(() => ({
     transform: [{ translateX: offsetX.value }],
   }))
 

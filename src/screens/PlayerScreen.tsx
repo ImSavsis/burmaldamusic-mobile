@@ -48,7 +48,8 @@ export function PlayerScreen({ track, onClose }: Props) {
       }
     })
 
-  const panStyle = useAnimatedStyle(() => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const panStyle: any = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }))
 
