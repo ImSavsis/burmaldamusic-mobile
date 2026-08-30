@@ -59,6 +59,8 @@ export function TrackCard({ track, isPlaying, onPress, onDelete }: Props) {
 
   const mins = Math.floor(track.duration / 60)
   const secs = String(Math.floor(track.duration % 60)).padStart(2, '0')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cardCombo: any = [styles.card, cardStyle, isPlaying ? styles.cardActive : undefined]
 
   return (
     <View style={styles.root}>
@@ -74,7 +76,7 @@ export function TrackCard({ track, isPlaying, onPress, onDelete }: Props) {
       </View>
 
       <GestureDetector gesture={pan}>
-        <Animated.View style={[styles.card, cardStyle, isPlaying ? styles.cardActive : undefined] as any}>
+        <Animated.View style={cardCombo}>
           <TouchableOpacity style={styles.inner} onPress={onPress} activeOpacity={0.7}>
             {track.coverUrl ? (
               <Image source={{ uri: track.coverUrl }} style={styles.cover} />
