@@ -27,10 +27,11 @@ jobs:
       - name: Install deps
         run: npm install --legacy-peer-deps
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK and NDK 27
         run: |
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;27.2.12479018" || true
 
       - name: Decode keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > android/app/release.keystore
