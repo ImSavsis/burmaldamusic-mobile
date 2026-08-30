@@ -3,8 +3,12 @@ import {
   View, Text, Image, StyleSheet, TouchableOpacity, Dimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-// @ts-ignore
-import Slider from '@react-native-community/slider'
+import SliderNative from '@react-native-community/slider'
+const Slider = SliderNative as unknown as React.ComponentType<{
+  style?: object; minimumValue?: number; maximumValue?: number; value?: number
+  onSlidingComplete?: (v: number) => void; minimumTrackTintColor?: string
+  maximumTrackTintColor?: string; thumbTintColor?: string
+}>
 import TrackPlayer, { usePlaybackState, useProgress, State } from 'react-native-track-player'
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, runOnJS,

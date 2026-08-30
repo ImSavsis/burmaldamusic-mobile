@@ -74,7 +74,7 @@ export function TrackCard({ track, isPlaying, onPress, onDelete }: Props) {
       </View>
 
       <GestureDetector gesture={pan}>
-        <Animated.View style={[styles.card, cardStyle, isPlaying ? styles.cardActive : null]}>
+        <Animated.View style={[styles.card, cardStyle as any, isPlaying ? styles.cardActive : undefined]}>
           <TouchableOpacity style={styles.inner} onPress={onPress} activeOpacity={0.7}>
             {track.coverUrl ? (
               <Image source={{ uri: track.coverUrl }} style={styles.cover} />
