@@ -1,12 +1,8 @@
-// @ts-nocheck
-import React, { useCallback } from 'react'
+import React, { useCallback, useRef } from 'react'
 import {
   View, Text, Image, StyleSheet, TouchableOpacity, Pressable,
+  Animated, PanResponder,
 } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, {
-  useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS,
-} from 'react-native-reanimated'
 import Share from 'react-native-share'
 import { Track, api } from '../api/client'
 import { colors, radius, spacing } from '../theme'
@@ -19,30 +15,24 @@ type Props = {
 }
 
 export function TrackCard({ track, isPlaying, onPress, onDelete }: Props) {
-  const offsetX = useSharedValue(0)
-  const actionShown = useSharedValue(0)
+  const offsetX = useRef(new Animated.Value(0)).current
 
-  const pan = Gesture.Pan()
-    .activeOffsetX([-10, 10])
-    .onUpdate(e => {
-      if (e.translationX < 0) {
-        offsetX.value = Math.max(-130, e.translationX)
-      }
-    })
-    .onEnd(e => {
-      if (e.translationX < -80) {
-        offsetX.value = withSpring(-130)
-        actionShown.value = 1
-      } else {
-        offsetX.value = withSpring(0)
-        actionShown.value = 0
-      }
-    })
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cardStyle: any = useAnimatedStyle(() => ({
-    transform: [{ translateX: offsetX.value }],
-  }))
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) =>
+        Math.abs(gs.dx) > 10 && Math.abs(gs.dx) > Math.abs(gs.dy),
+      onPanResponderMove: (_, gs) => {
+        if (gs.dx < 0) offsetX.setValue(Math.max(-130, gs.dx))
+      },
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dx < -80) {
+          Animated.spring(offsetX, { toValue: -130, useNativeDriver: true }).start()
+        } else {
+          Animated.spring(offsetX, { toValue: 0, useNativeDriver: true }).start()
+        }
+      },
+    }),
+  ).current
 
   const doShare = useCallback(async () => {
     await Share.open({
@@ -50,19 +40,17 @@ export function TrackCard({ track, isPlaying, onPress, onDelete }: Props) {
       url: api.streamUrl(track.filename),
       type: 'audio/flac',
     }).catch(() => {})
-    offsetX.value = withSpring(0)
-  }, [track])
+    Animated.spring(offsetX, { toValue: 0, useNativeDriver: true }).start()
+  }, [track, offsetX])
 
   const doDelete = useCallback(() => {
-    offsetX.value = withTiming(-400, { duration: 250 }, () => {
-      runOnJS(onDelete)(track.id)
+    Animated.timing(offsetX, { toValue: -400, duration: 250, useNativeDriver: true }).start(() => {
+      onDelete(track.id)
     })
-  }, [track.id, onDelete])
+  }, [track.id, onDelete, offsetX])
 
   const mins = Math.floor(track.duration / 60)
   const secs = String(Math.floor(track.duration % 60)).padStart(2, '0')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cardCombo: any = [styles.card, cardStyle, isPlaying ? styles.cardActive : undefined]
 
   return (
     <View style={styles.root}>
@@ -77,27 +65,32 @@ export function TrackCard({ track, isPlaying, onPress, onDelete }: Props) {
         </Pressable>
       </View>
 
-      <GestureDetector gesture={pan}>
-        <Animated.View style={cardCombo}>
-          <TouchableOpacity style={styles.inner} onPress={onPress} activeOpacity={0.7}>
-            {track.coverUrl ? (
-              <Image source={{ uri: track.coverUrl }} style={styles.cover} />
-            ) : (
-              <View style={styles.coverFallback}>
-                <Text style={styles.coverIcon}>♪</Text>
-              </View>
-            )}
-            <View style={styles.info}>
-              <Text style={[styles.title, isPlaying && styles.titleActive]} numberOfLines={1}>
-                {track.title}
-              </Text>
-              <Text style={styles.artist} numberOfLines={1}>{track.artist}</Text>
+      <Animated.View
+        style={[
+          styles.card,
+          isPlaying && styles.cardActive,
+          { transform: [{ translateX: offsetX }] },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <TouchableOpacity style={styles.inner} onPress={onPress} activeOpacity={0.7}>
+          {track.coverUrl ? (
+            <Image source={{ uri: track.coverUrl }} style={styles.cover} />
+          ) : (
+            <View style={styles.coverFallback}>
+              <Text style={styles.coverIcon}>♪</Text>
             </View>
-            <Text style={styles.duration}>{mins}:{secs}</Text>
-            {isPlaying && <View style={styles.nowDot} />}
-          </TouchableOpacity>
-        </Animated.View>
-      </GestureDetector>
+          )}
+          <View style={styles.info}>
+            <Text style={[styles.title, isPlaying && styles.titleActive]} numberOfLines={1}>
+              {track.title}
+            </Text>
+            <Text style={styles.artist} numberOfLines={1}>{track.artist}</Text>
+          </View>
+          <Text style={styles.duration}>{mins}:{secs}</Text>
+          {isPlaying && <View style={styles.nowDot} />}
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   )
 }

@@ -1,7 +1,8 @@
 // @ts-nocheck
-import React, { useCallback } from 'react'
+import React, { useCallback, useRef } from 'react'
 import {
   View, Text, Image, StyleSheet, TouchableOpacity, Dimensions,
+  Animated, PanResponder,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import SliderNative from '@react-native-community/slider'
@@ -11,10 +12,6 @@ const Slider = SliderNative as unknown as React.ComponentType<{
   maximumTrackTintColor?: string; thumbTintColor?: string
 }>
 import TrackPlayer, { usePlaybackState, useProgress, State } from 'react-native-track-player'
-import Animated, {
-  useSharedValue, useAnimatedStyle, withSpring, runOnJS,
-} from 'react-native-reanimated'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Share from 'react-native-share'
 import { Track, api } from '../api/client'
 import { colors, radius, spacing } from '../theme'
@@ -34,25 +31,23 @@ export function PlayerScreen({ track, onClose }: Props) {
   const { state } = usePlaybackState()
   const { position, duration } = useProgress(250)
   const isPlaying = state === State.Playing
-  const translateY = useSharedValue(0)
+  const translateY = useRef(new Animated.Value(0)).current
 
-  const pan = Gesture.Pan()
-    .activeOffsetY([15, 15])
-    .onUpdate(e => {
-      if (e.translationY > 0) translateY.value = e.translationY
-    })
-    .onEnd(e => {
-      if (e.translationY > SCREEN_H * 0.25) {
-        translateY.value = withSpring(SCREEN_H, {}, () => runOnJS(onClose)())
-      } else {
-        translateY.value = withSpring(0)
-      }
-    })
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const panStyle: any = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }))
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) => gs.dy > 15 && gs.dy > Math.abs(gs.dx),
+      onPanResponderMove: (_, gs) => {
+        if (gs.dy > 0) translateY.setValue(gs.dy)
+      },
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dy > SCREEN_H * 0.25) {
+          Animated.spring(translateY, { toValue: SCREEN_H, useNativeDriver: true }).start(onClose)
+        } else {
+          Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start()
+        }
+      },
+    }),
+  ).current
 
   const doShare = useCallback(async () => {
     await Share.open({
@@ -63,68 +58,73 @@ export function PlayerScreen({ track, onClose }: Props) {
   }, [track])
 
   return (
-    <GestureDetector gesture={pan}>
-      <Animated.View style={[styles.root, panStyle, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <View style={styles.handle} />
+    <Animated.View
+      style={[
+        styles.root,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+        { transform: [{ translateY }] },
+      ]}
+      {...panResponder.panHandlers}
+    >
+      <View style={styles.handle} />
 
-        <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-          <Text style={styles.closeIcon}>⌄</Text>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+        <Text style={styles.closeIcon}>⌄</Text>
+      </TouchableOpacity>
 
-        <View style={styles.artwork}>
-          {track.coverUrl ? (
-            <Image source={{ uri: track.coverUrl }} style={styles.cover} />
-          ) : (
-            <View style={[styles.cover, styles.coverFb]}>
-              <Text style={styles.coverIcon}>♪</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.meta}>
-          <Text style={styles.title} numberOfLines={2}>{track.title}</Text>
-          <Text style={styles.artist}>{track.artist}</Text>
-        </View>
-
-        <View style={styles.sliderWrap}>
-          <Slider
-            style={styles.slider}
-            minimumValue={0}
-            maximumValue={duration || 1}
-            value={position}
-            onSlidingComplete={(v: number) => TrackPlayer.seekTo(v)}
-            minimumTrackTintColor={colors.purple}
-            maximumTrackTintColor={colors.cardBorder}
-            thumbTintColor={colors.purple}
-          />
-          <View style={styles.timeRow}>
-            <Text style={styles.time}>{fmt(position)}</Text>
-            <Text style={styles.time}>{fmt(duration)}</Text>
+      <View style={styles.artwork}>
+        {track.coverUrl ? (
+          <Image source={{ uri: track.coverUrl }} style={styles.cover} />
+        ) : (
+          <View style={[styles.cover, styles.coverFb]}>
+            <Text style={styles.coverIcon}>♪</Text>
           </View>
-        </View>
+        )}
+      </View>
 
-        <View style={styles.controls}>
-          <TouchableOpacity style={styles.ctrl} onPress={() => TrackPlayer.skipToPrevious()}>
-            <Text style={styles.ctrlIcon}>⏮</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.playBtn}
-            onPress={() => isPlaying ? TrackPlayer.pause() : TrackPlayer.play()}>
-            <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.ctrl} onPress={() => TrackPlayer.skipToNext()}>
-            <Text style={styles.ctrlIcon}>⏭</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.meta}>
+        <Text style={styles.title} numberOfLines={2}>{track.title}</Text>
+        <Text style={styles.artist}>{track.artist}</Text>
+      </View>
 
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.action} onPress={doShare}>
-            <Text style={styles.actionIcon}>↑</Text>
-            <Text style={styles.actionLabel}>поделиться</Text>
-          </TouchableOpacity>
+      <View style={styles.sliderWrap}>
+        <Slider
+          style={styles.slider}
+          minimumValue={0}
+          maximumValue={duration || 1}
+          value={position}
+          onSlidingComplete={(v: number) => TrackPlayer.seekTo(v)}
+          minimumTrackTintColor={colors.purple}
+          maximumTrackTintColor={colors.cardBorder}
+          thumbTintColor={colors.purple}
+        />
+        <View style={styles.timeRow}>
+          <Text style={styles.time}>{fmt(position)}</Text>
+          <Text style={styles.time}>{fmt(duration)}</Text>
         </View>
-      </Animated.View>
-    </GestureDetector>
+      </View>
+
+      <View style={styles.controls}>
+        <TouchableOpacity style={styles.ctrl} onPress={() => TrackPlayer.skipToPrevious()}>
+          <Text style={styles.ctrlIcon}>⏮</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.playBtn}
+          onPress={() => isPlaying ? TrackPlayer.pause() : TrackPlayer.play()}>
+          <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.ctrl} onPress={() => TrackPlayer.skipToNext()}>
+          <Text style={styles.ctrlIcon}>⏭</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.actions}>
+        <TouchableOpacity style={styles.action} onPress={doShare}>
+          <Text style={styles.actionIcon}>↑</Text>
+          <Text style={styles.actionLabel}>поделиться</Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
   )
 }
 

@@ -1,11 +1,10 @@
-﻿// @ts-nocheck
-import React, { useEffect, useState } from 'react'
-import { View, Text, Image, StyleSheet, TouchableOpacity, Pressable } from 'react-native'
-import TrackPlayer, {
-  usePlaybackState, useProgress, State, Event, useTrackPlayerEvents,
-} from 'react-native-track-player'
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated'
-import { colors, radius, spacing } from '../theme'
+import React, { useEffect, useRef } from 'react'
+import {
+  View, Text, Image, StyleSheet, TouchableOpacity, Pressable,
+  Animated, Easing,
+} from 'react-native'
+import TrackPlayer, { usePlaybackState, useProgress, State } from 'react-native-track-player'
+import { colors, spacing } from '../theme'
 import { Track } from '../api/client'
 
 type Props = {
@@ -17,19 +16,28 @@ export function MiniPlayer({ track, onExpand }: Props) {
   const playbackState = usePlaybackState()
   const { position, duration } = useProgress(250)
   const isPlaying = playbackState.state === State.Playing
-  const spin = useSharedValue(0)
+  const spinAnim = useRef(new Animated.Value(0)).current
+  const loopRef = useRef<Animated.CompositeAnimation | null>(null)
 
   useEffect(() => {
     if (isPlaying) {
-      spin.value = withRepeat(withTiming(1, { duration: 4000, easing: Easing.linear }), -1)
+      spinAnim.setValue(0)
+      loopRef.current = Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 4000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      )
+      loopRef.current.start()
     } else {
-      spin.value = withTiming(spin.value, { duration: 200 })
+      loopRef.current?.stop()
     }
-  }, [isPlaying])
+    return () => { loopRef.current?.stop() }
+  }, [isPlaying, spinAnim])
 
-  const discStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${spin.value * 360}deg` }],
-  }))
+  const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
 
   if (!track) return null
 
@@ -39,12 +47,12 @@ export function MiniPlayer({ track, onExpand }: Props) {
     <Pressable style={styles.root} onPress={onExpand}>
       <View style={[styles.bar, { width: `${progress * 100}%` as any }]} />
       <View style={styles.content}>
-        <Animated.View style={discStyle}>
+        <Animated.View style={{ transform: [{ rotate: spin }] }}>
           {track.coverUrl ? (
             <Image source={{ uri: track.coverUrl }} style={styles.art} />
           ) : (
             <View style={[styles.art, styles.artFallback]}>
-              <Text style={styles.artIcon}>в™Є</Text>
+              <Text style={styles.artIcon}>♪</Text>
             </View>
           )}
         </Animated.View>
@@ -55,10 +63,10 @@ export function MiniPlayer({ track, onExpand }: Props) {
         <TouchableOpacity
           style={styles.btn}
           onPress={() => isPlaying ? TrackPlayer.pause() : TrackPlayer.play()}>
-          <Text style={styles.btnIcon}>{isPlaying ? 'вЏё' : 'в–¶'}</Text>
+          <Text style={styles.btnIcon}>{isPlaying ? '⏸' : '▶'}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.btn} onPress={() => TrackPlayer.skip(0)}>
-          <Text style={styles.btnIcon}>вЏ­</Text>
+          <Text style={styles.btnIcon}>⏭</Text>
         </TouchableOpacity>
       </View>
     </Pressable>
